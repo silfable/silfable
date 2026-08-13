@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    env:
+      DATABASE_URL: mongodb://localhost:27017/silfable_ci
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate --workspace @silfable/web
+
+      - name: Typecheck workspaces
+        run: npm run typecheck
+
+      - name: Test deterministic core
+        run: npm test
+
+      - name: Lint website
+        run: npm run lint:web
+
+      - name: Build website
+        run: npm run build:web
+
+      - name: Build desktop source
+        run: npm run build:desktop
+
+      - name: Audit desktop privilege boundary
+        run: npm run audit:desktop

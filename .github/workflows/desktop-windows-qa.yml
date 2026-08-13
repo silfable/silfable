@@ -1,0 +1,78 @@
+name: Desktop Windows QA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/desktop/**"
+      - "apps/web/prisma/schema.prisma"
+      - "packages/contracts/**"
+      - "scripts/audit-desktop-bundles.mjs"
+      - "scripts/audit-windows-artifacts.mjs"
+      - "scripts/generate-release-checksums.mjs"
+      - "scripts/smoke-electron-windows.ps1"
+      - ".github/workflows/desktop-windows-qa.yml"
+      - "package-lock.json"
+      - "package.json"
+  push:
+    branches: [main]
+    paths:
+      - "apps/desktop/**"
+      - "apps/web/prisma/schema.prisma"
+      - "packages/contracts/**"
+      - "scripts/**"
+      - ".github/workflows/desktop-windows-qa.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-windows-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-and-smoke:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install workspace
+        run: npm ci
+
+      - name: Generate Prisma Client
+        shell: pwsh
+        env:
+          DATABASE_URL: mongodb://localhost:27017/silfable_ci
+        run: npm run db:generate --workspace @silfable/web
+
+      - name: Verify source
+        run: npm run typecheck && npm test
+
+      - name: Build unsigned internal QA installer
+        run: npm run dist:desktop:win:qa
+
+      - name: Audit desktop privilege boundary
+        run: npm run audit:desktop
+
+      - name: Smoke packaged Windows application
+        shell: pwsh
+        run: ./scripts/smoke-electron-windows.ps1 -Executable ./apps/desktop/release/win-unpacked/silfable.exe
+
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: silfable-windows-x64-qa
+          path: |
+            apps/desktop/release/Silfable-*-windows-x64-setup.exe
+            apps/desktop/release/SHA256SUMS.txt
+          if-no-files-found: warn
+          retention-days: 14
