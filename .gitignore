@@ -53,6 +53,9 @@
 **/build
 **/dist
 **/release
+# This is a Next.js source route, not generated build output.
+!apps/web/src/app/api/evm/uniswap/build/
+!apps/web/src/app/api/evm/uniswap/build/route.ts
 # Local Electron packaging and smoke-test output. These folders can contain
 # unpacked applications hundreds of megabytes in size and are never source.
 apps/desktop/release-qa/
