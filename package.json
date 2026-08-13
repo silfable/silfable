@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "homepage": "https://github.com/kevinmpandoh/silfable#readme",
+  "homepage": "https://github.com/silfable/silfable#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kevinmpandoh/silfable.git"
+    "url": "git+https://github.com/silfable/silfable.git"
   },
   "bugs": {
-    "url": "https://github.com/kevinmpandoh/silfable/issues"
+    "url": "https://github.com/silfable/silfable/issues"
   },
   "workspaces": [
     "apps/*",
