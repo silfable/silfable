@@ -6,7 +6,7 @@ import { AtlasReveal } from "@/components/motion/AtlasMotion";
 const builds = [
   { platform: "macOS", detail: "Apple Silicon & Intel", file: "Signed package in preparation", requirement: "Will be published after platform signing and compatibility validation.", href: null },
   { platform: "Windows", detail: "x64 installer", file: "Installer in preparation", requirement: "Will follow the Linux preview acceptance process.", href: null },
-  { platform: "Linux", detail: "AppImage & Debian · x64 + ARM64", file: "Silfable-0.1.0-x64.AppImage", requirement: "Choose x64 for Intel/AMD PCs or ARM64 for aarch64 devices. Verify the artifact against SHA256SUMS.txt.", href: "https://github.com/silfable/silfable/releases/download/v0.1.0/Silfable-0.1.0-x64.AppImage" },
+  { platform: "Linux", detail: "AppImage & Debian · x64 + ARM64", file: "Silfable-0.1.0-x86_64.AppImage", requirement: "Choose x64 for Intel/AMD PCs or ARM64 for aarch64 devices. Verify the artifact against SHA256SUMS.txt.", href: "https://github.com/silfable/silfable/releases/download/v0.1.0/Silfable-0.1.0-x86_64.AppImage" },
 ] as const;
 
 export function ReleaseDownloads() {
@@ -26,9 +26,9 @@ export function ReleaseDownloads() {
             <div className="mt-9 grid gap-3">
               {available ? <Button asChild className="atlasCoralButton w-full "><a href={build.href ?? undefined} download>AppImage · x64 <ArrowDownToLine className="ml-3 size-4" /></a></Button> : <Button disabled className="w-full text-slate-700">Coming soon <Clock3 className="ml-3 size-4" /></Button>}
               {available ? <Button asChild variant="outline" className="outlineButton w-full"><a href="https://github.com/silfable/silfable/releases/download/v0.1.0/Silfable-0.1.0-arm64.AppImage" download>AppImage · ARM64</a></Button> : <Button disabled variant="outline" className="outlineButton w-full">Release notes</Button>}
-              {available ? <div className="grid grid-cols-2 gap-2"><Button asChild variant="outline" className="outlineButton w-full"><a href="https://github.com/silfable/silfable/releases/download/v0.1.0/Silfable-0.1.0-x64.deb" download>Debian x64</a></Button><Button asChild variant="outline" className="outlineButton w-full"><a href="https://github.com/silfable/silfable/releases/download/v0.1.0/Silfable-0.1.0-arm64.deb" download>Debian ARM64</a></Button></div> : null}
+              {available ? <div className="grid grid-cols-2 gap-2"><Button asChild variant="outline" className="outlineButton w-full"><a href="https://github.com/silfable/silfable/releases/download/v0.1.0/Silfable-0.1.0-amd64.deb" download>Debian x64</a></Button><Button asChild variant="outline" className="outlineButton w-full"><a href="https://github.com/silfable/silfable/releases/download/v0.1.0/Silfable-0.1.0-arm64.deb" download>Debian ARM64</a></Button></div> : null}
             </div>
-            <div className="mt-auto border-t border-[var(--line)] pt-6"><p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[var(--blue-2)]">Build details</p><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{build.requirement}</p></div>
+            <div className="mt-6 border-t border-[var(--line)] pt-6"><p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[var(--blue-2)]">Build details</p><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{build.requirement}</p></div>
           </article>;
         })}
       </AtlasReveal>

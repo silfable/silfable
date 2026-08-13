@@ -17,7 +17,7 @@ export async function DownloadTable() {
   const releases: PlatformRelease[] = [
     { platform: "macOS", detail: "Apple Silicon & Intel", requirement: "Signed package in preparation.", primaryLabel: "Coming soon" },
     { platform: "Windows", detail: "x64 installer", requirement: "Queued after preview validation.", primaryLabel: "Coming soon" },
-    { platform: "Linux", detail: "AppImage · x64 + ARM64", requirement: "Use x64 for Intel/AMD or ARM64 when `uname -m` returns aarch64/arm64.", primaryLabel: "AppImage · x64", href: `https://github.com/silfable/silfable/releases/download/${tag}/Silfable-${version}-x64.AppImage`, secondaryLabel: "AppImage · ARM64", secondaryHref: `https://github.com/silfable/silfable/releases/download/${tag}/Silfable-${version}-arm64.AppImage` },
+    { platform: "Linux", detail: "AppImage · x64 + ARM64", requirement: "Use x64 for Intel/AMD or ARM64 when `uname -m` returns aarch64/arm64.", primaryLabel: "AppImage · x64", href: `https://github.com/silfable/silfable/releases/download/${tag}/Silfable-${version}-x86_64.AppImage`, secondaryLabel: "AppImage · ARM64", secondaryHref: `https://github.com/silfable/silfable/releases/download/${tag}/Silfable-${version}-arm64.AppImage` },
   ];
 
   return (
