@@ -4,7 +4,7 @@ import { isAuthFailure, requireWalletAuth } from "@/lib/wallet-auth";
 import { resolveSolanaBridgeIntent } from "@/lib/bridge-intent";
 import { assertSolanaBridgeBalance } from "@/lib/solana-bridge-preflight";
 import { resolveRobinhoodSwapIntent } from "@/lib/evm-swap-intent";
-import { resolveRobinhoodToken } from "@/lib/robinhood-token";
+import { resolveRobinhoodTokenReference, type RobinhoodTokenReferenceResult } from "@/lib/robinhood-token";
 import { resolveEvmToSolanaBridgeIntent } from "@/lib/evm-bridge-intent";
 import { resolvePumpAnalysisIntent } from "@/lib/pump-analysis-utils";
 import { runPumpAnalysisAiTool } from "@/lib/pump-ai-tool";
@@ -100,7 +100,7 @@ async function callOpenRouter(input: {
     );
   const capabilityBoundary =
     `You are Silfable Web's ${input.workspace.toUpperCase()} AI trading assistant. ` +
-    "You help users analyze wallets, research tokens/markets, configure monitor-and-propose Solana DCA/take-profit/stop-loss automations, prepare guarded Pump.fun Token Launch drafts in Solana sessions, prepare Jupiter swap quotes, and plan cross-chain bridges between Solana USDC and Robinhood USDG in the direction supported by the active workspace. In a Robinhood EVM session, ETH and USDG are recognized automatically. For every other EVM token, require the user to provide its Robinhood Chain contract address; never infer or invent one from a name or symbol. " +
+    "You help users analyze wallets, research tokens/markets, configure monitor-and-propose Solana DCA/take-profit/stop-loss automations, prepare guarded Pump.fun Token Launch drafts in Solana sessions, prepare Jupiter swap quotes, and plan cross-chain bridges between Solana USDC and Robinhood USDG in the direction supported by the active workspace. In a Robinhood EVM session, token symbols are resolved only through Silfable's verified registry or exact Blockscout matches. If more than one validated contract uses a symbol, require the user to select an address; never choose by popularity or invent an address. " +
     "Safety Guardrails: Transactions are prepared by application code and ALWAYS require explicit browser wallet approval. Web cannot auto-trade, cloud sign, or perform silent execution. Never invent fake quotes, token mints, or balances. USDG and ETH Robinhood swap intents are handled by deterministic application code before this model is called. " +
     "Communication Style: Respond naturally, directly, and concisely in the user's language. Do NOT print mechanical boilerplate, repetitive disclaimer templates, or rigid 'What I can / cannot do' lists unless the user explicitly asks for system boundaries.";
   const system =
@@ -193,8 +193,8 @@ export async function POST(req: NextRequest) {
       if (selectedWorkspace !== "evm" || chainKey !== "robinhood") {
         return NextResponse.json({ role: "assistant", content: "Open a Robinhood EVM session bound to your EVM wallet first. No quote or transaction was prepared." });
       }
-      if (!evmSwapIntent.amount || !evmSwapIntent.sellToken || !evmSwapIntent.buyToken || evmSwapIntent.needsContractAddress) {
-        return NextResponse.json({ role: "assistant", content: "Please provide the amount and contract address for every token other than ETH or USDG. Example: `swap 0.5 ETH to 0x...`. Silfable will validate the address and token metadata on Robinhood Chain before requesting a quote." });
+      if (!evmSwapIntent.amount || !evmSwapIntent.sellToken || !evmSwapIntent.buyToken) {
+        return NextResponse.json({ role: "assistant", content: "Provide a positive input amount and token pair. Example: `swap 0.001 ETH to WETH`. A contract address is only required when a symbol cannot be resolved uniquely." });
       }
       if (evmSwapIntent.sellToken === evmSwapIntent.buyToken || Number(evmSwapIntent.amount) <= 0) {
         return NextResponse.json({ role: "assistant", content: "The source and destination tokens must differ, with a positive amount." });
@@ -202,9 +202,36 @@ export async function POST(req: NextRequest) {
       if (typeof sessionWalletAddress !== "string" || !/^0x[0-9a-f]{40}$/iu.test(sessionWalletAddress)) {
         return NextResponse.json({ role: "assistant", content: "The Robinhood session is not bound to a valid EVM wallet." });
       }
-      const [sellToken, buyToken] = await Promise.all([resolveRobinhoodToken(evmSwapIntent.sellToken), resolveRobinhoodToken(evmSwapIntent.buyToken)]);
-      if (!sellToken || !buyToken) {
-        return NextResponse.json({ role: "assistant", content: "I could not validate one of those contract addresses as an ERC-20 token on Robinhood Chain. Check the address and send the swap request again." });
+      let references: [RobinhoodTokenReferenceResult, RobinhoodTokenReferenceResult];
+      try {
+        references = await Promise.all([
+          resolveRobinhoodTokenReference(evmSwapIntent.sellToken),
+          resolveRobinhoodTokenReference(evmSwapIntent.buyToken),
+        ]);
+      } catch {
+        return NextResponse.json({ role: "assistant", content: "Token discovery is temporarily unavailable. No route was requested. You can retry or provide the exact Robinhood Chain contract address." });
+      }
+      const requestedSymbols = [evmSwapIntent.sellToken, evmSwapIntent.buyToken];
+      const ambiguousIndex = references.findIndex((reference) => reference.status === "ambiguous");
+      if (ambiguousIndex >= 0) {
+        const ambiguous = references[ambiguousIndex];
+        if (ambiguous.status === "ambiguous") {
+          const options = ambiguous.candidates.map((token) => `- ${token.symbol} · \`${token.address}\``).join("\n");
+          return NextResponse.json({ role: "assistant", content: `I found multiple validated contracts for ${requestedSymbols[ambiguousIndex]}. Choose the intended Robinhood Chain contract and resend the swap request:\n${options}` });
+        }
+      }
+      const missingIndex = references.findIndex((reference) => reference.status === "not_found");
+      if (missingIndex >= 0) {
+        return NextResponse.json({ role: "assistant", content: `I could not find one exact, validated Robinhood Chain contract for ${requestedSymbols[missingIndex]}. Provide its contract address, then Silfable will validate it before requesting a quote.` });
+      }
+      const [sellReference, buyReference] = references;
+      if (sellReference.status !== "resolved" || buyReference.status !== "resolved") {
+        return NextResponse.json({ role: "assistant", content: "The token pair could not be resolved safely. No route was requested." });
+      }
+      const sellToken = sellReference.token;
+      const buyToken = buyReference.token;
+      if (sellToken.address === buyToken.address) {
+        return NextResponse.json({ role: "assistant", content: "The source and destination resolve to the same Robinhood Chain token. Choose two different assets." });
       }
       return NextResponse.json({
         role: "assistant",

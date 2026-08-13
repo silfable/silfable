@@ -19,6 +19,36 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
+function upstreamMessage(payload: unknown): string | null {
+  const record = asRecord(payload);
+  const nested = asRecord(record?.error);
+  for (const value of [record?.detail, record?.message, nested?.detail, nested?.message]) {
+    if (typeof value === "string" && value.trim()) return value.trim().slice(0, 240);
+  }
+  return null;
+}
+
+async function requestUniswapQuote(apiKey: string, body: Record<string, unknown>): Promise<{ response: Response; payload: unknown }> {
+  const run = async () => {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { Accept: "application/json", "content-type": "application/json", "x-api-key": apiKey, "x-permit2-disabled": "true", "x-universal-router-version": "2.1.1" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+    const raw = await response.text();
+    let payload: unknown = null;
+    try { payload = raw ? JSON.parse(raw) : null; } catch { payload = raw.slice(0, 240); }
+    return { response, payload };
+  };
+
+  const first = await run();
+  if (![404, 429, 502, 503, 504].includes(first.response.status)) return first;
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  return run();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const input = await request.json() as { walletAddress?: unknown; apiKey?: unknown; sellToken?: unknown; buyToken?: unknown; amount?: unknown; slippageBps?: unknown };
@@ -34,15 +64,15 @@ export async function POST(request: NextRequest) {
     const amountIn = decimalToRaw(input.amount, sellToken.decimals);
     if (!amountIn) return NextResponse.json({ error: "Swap amount must be a positive value with supported token precision." }, { status: 400 });
     const slippageBps = Math.max(1, Math.min(500, Number(input.slippageBps) || 100));
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: { Accept: "application/json", "content-type": "application/json", "x-api-key": input.apiKey.trim(), "x-permit2-disabled": "true", "x-universal-router-version": "2.1.1" },
-      body: JSON.stringify({ type: "EXACT_INPUT", amount: amountIn, tokenInChainId: CHAIN_ID, tokenOutChainId: CHAIN_ID, tokenIn, tokenOut, swapper: input.walletAddress, recipient: input.walletAddress, slippageTolerance: slippageBps / 100, routingPreference: "BEST_PRICE", protocols: ["V2", "V3", "V4"] }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(20_000),
-    });
-    const body: unknown = await response.json().catch(() => null);
-    if (!response.ok) return NextResponse.json({ error: `Uniswap quote failed: ${response.status}` }, { status: 502 });
+    const { response, payload: body } = await requestUniswapQuote(input.apiKey.trim(), { type: "EXACT_INPUT", amount: amountIn, tokenInChainId: CHAIN_ID, tokenOutChainId: CHAIN_ID, tokenIn, tokenOut, swapper: input.walletAddress, recipient: input.walletAddress, slippageTolerance: slippageBps / 100, routingPreference: "BEST_PRICE", protocols: ["V2", "V3", "V4"] });
+    if (!response.ok) {
+      const detail = upstreamMessage(body);
+      if (response.status === 404) {
+        return NextResponse.json({ error: `No live Uniswap route is currently available for ${sellToken.symbol} → ${buyToken.symbol}${detail ? ` (${detail})` : ""}. No transaction was prepared.` }, { status: 422 });
+      }
+      if (response.status === 429) return NextResponse.json({ error: "Uniswap temporarily rate-limited the quote request. Wait a moment, then retry; no transaction was prepared." }, { status: 503 });
+      return NextResponse.json({ error: `Uniswap could not prepare this quote${detail ? `: ${detail}` : ` (HTTP ${response.status})`}. No transaction was prepared.` }, { status: 502 });
+    }
     const result = asRecord(body);
     const quote = asRecord(result?.quote);
     const quoteInput = asRecord(quote?.input);

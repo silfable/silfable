@@ -1,7 +1,9 @@
 const RPC_URL = process.env.ROBINHOOD_RPC_URL || "https://rpc.mainnet.chain.robinhood.com";
 export const ROBINHOOD_NATIVE_ETH = "0x0000000000000000000000000000000000000000";
 export const ROBINHOOD_USDG = "0x5fc5360d0400a0fd4f2af552add042d716f1d168";
+export const ROBINHOOD_WETH = "0x0bd7d308f8e1639fab988df18a8011f41eacad73";
 const ADDRESS = /^0x[0-9a-f]{40}$/iu;
+const SYMBOL = /^[A-Za-z][A-Za-z0-9_-]{1,31}$/u;
 const BLOCKSCOUT_API = "https://robinhoodchain.blockscout.com/api/v2";
 
 export interface RobinhoodToken {
@@ -10,6 +12,18 @@ export interface RobinhoodToken {
   decimals: number;
   native: boolean;
 }
+
+export type RobinhoodTokenReferenceResult =
+  | { status: "resolved"; token: RobinhoodToken }
+  | { status: "ambiguous"; candidates: RobinhoodToken[] }
+  | { status: "not_found"; candidates: [] };
+
+const VERIFIED_TOKENS: Record<string, RobinhoodToken> = {
+  ETH: { address: ROBINHOOD_NATIVE_ETH, symbol: "ETH", decimals: 18, native: true },
+  USD: { address: ROBINHOOD_USDG, symbol: "USDG", decimals: 6, native: false },
+  USDG: { address: ROBINHOOD_USDG, symbol: "USDG", decimals: 6, native: false },
+  WETH: { address: ROBINHOOD_WETH, symbol: "WETH", decimals: 18, native: false },
+};
 
 async function rpc(method: string, params: unknown[]): Promise<string> {
   const response = await fetch(RPC_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }), cache: "no-store", signal: AbortSignal.timeout(12_000) });
@@ -45,11 +59,40 @@ async function resolveFromBlockscout(address: string): Promise<RobinhoodToken | 
   return { address, symbol, decimals, native: false };
 }
 
+type BlockscoutTokenItem = {
+  address?: unknown;
+  address_hash?: unknown;
+  symbol?: unknown;
+  decimals?: unknown;
+  type?: unknown;
+  reputation?: unknown;
+};
+
+export function parseBlockscoutTokenCandidates(payload: unknown, requestedSymbol: string): RobinhoodToken[] {
+  if (!payload || typeof payload !== "object" || !Array.isArray((payload as { items?: unknown }).items)) return [];
+  const normalizedSymbol = requestedSymbol.trim().toUpperCase();
+  const unique = new Map<string, RobinhoodToken>();
+
+  for (const item of (payload as { items: BlockscoutTokenItem[] }).items) {
+    const rawAddress = typeof item.address === "string" ? item.address : item.address_hash;
+    const rawDecimals = typeof item.decimals === "string" || typeof item.decimals === "number" ? String(item.decimals) : "";
+    if (typeof rawAddress !== "string" || !ADDRESS.test(rawAddress) || typeof item.symbol !== "string") continue;
+    if (item.symbol.trim().toUpperCase() !== normalizedSymbol || item.type !== "ERC-20" || item.reputation === "scam" || !/^\d{1,2}$/u.test(rawDecimals)) continue;
+    const decimals = Number(rawDecimals);
+    if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36) continue;
+    const address = rawAddress.toLowerCase();
+    unique.set(address, { address, symbol: item.symbol.trim(), decimals, native: false });
+  }
+
+  return [...unique.values()].slice(0, 5);
+}
+
 export async function resolveRobinhoodToken(value: unknown): Promise<RobinhoodToken | null> {
   if (typeof value !== "string") return null;
   const token = value.trim();
-  if (/^ETH$/iu.test(token) || token.toLowerCase() === ROBINHOOD_NATIVE_ETH) return { address: ROBINHOOD_NATIVE_ETH, symbol: "ETH", decimals: 18, native: true };
-  if (/^USDG$/iu.test(token) || /^USD$/iu.test(token)) return { address: ROBINHOOD_USDG, symbol: "USDG", decimals: 6, native: false };
+  const verified = VERIFIED_TOKENS[token.toUpperCase()];
+  if (verified) return verified;
+  if (token.toLowerCase() === ROBINHOOD_NATIVE_ETH) return VERIFIED_TOKENS.ETH;
   if (!ADDRESS.test(token)) return null;
   const address = token.toLowerCase();
   try {
@@ -68,4 +111,37 @@ export async function resolveRobinhoodToken(value: unknown): Promise<RobinhoodTo
     const detail = error instanceof Error ? error.message : "unknown RPC failure";
     throw new Error(`Robinhood token metadata could not be verified through RPC or Blockscout: ${detail}`);
   }
+}
+
+export async function resolveRobinhoodTokenReference(value: unknown): Promise<RobinhoodTokenReferenceResult> {
+  if (typeof value !== "string") return { status: "not_found", candidates: [] };
+  const reference = value.trim();
+  const verified = VERIFIED_TOKENS[reference.toUpperCase()];
+  if (verified) return { status: "resolved", token: verified };
+
+  if (ADDRESS.test(reference)) {
+    const token = await resolveRobinhoodToken(reference);
+    return token ? { status: "resolved", token } : { status: "not_found", candidates: [] };
+  }
+  if (!SYMBOL.test(reference)) return { status: "not_found", candidates: [] };
+
+  const response = await fetch(`${BLOCKSCOUT_API}/tokens?q=${encodeURIComponent(reference)}&type=ERC-20`, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!response.ok) return { status: "not_found", candidates: [] };
+  const candidates = parseBlockscoutTokenCandidates(await response.json(), reference);
+  if (candidates.length === 0) return { status: "not_found", candidates: [] };
+
+  const validated = (await Promise.all(candidates.map(async (candidate) => {
+    try {
+      return await resolveRobinhoodToken(candidate.address);
+    } catch {
+      return null;
+    }
+  }))).filter((candidate): candidate is RobinhoodToken => candidate !== null);
+
+  if (validated.length === 1) return { status: "resolved", token: validated[0] };
+  if (validated.length > 1) return { status: "ambiguous", candidates: validated };
+  return { status: "not_found", candidates: [] };
 }

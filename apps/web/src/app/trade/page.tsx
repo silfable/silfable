@@ -884,14 +884,16 @@ async function assertEvmSwapFunds(input: {
 }) {
   const balanceOfData = `0x70a08231000000000000000000000000${input.walletAddress.replace(/^0x/i, "").toLowerCase()}`;
   const nativeInput = input.sellTokenAddress === "0x0000000000000000000000000000000000000000";
-  const [nativeBalance, gasLimit, gasPrice, tokenBalance] = await Promise.all([
+  const [nativeBalance, gasLimit, gasPrice, simulation, tokenBalance] = await Promise.all([
     queryEvmRpc(input.rpcUrl, "eth_getBalance", [input.walletAddress, "latest"]),
     queryEvmRpc(input.rpcUrl, "eth_estimateGas", [{ from: input.transaction.from, to: input.transaction.to, data: input.transaction.data, value: input.transaction.value }]),
     queryEvmRpc(input.rpcUrl, "eth_gasPrice", []),
+    queryEvmRpc(input.rpcUrl, "eth_call", [{ from: input.transaction.from, to: input.transaction.to, data: input.transaction.data, value: input.transaction.value }, "latest"]),
     !nativeInput
       ? queryEvmRpc(input.rpcUrl, "eth_call", [{ to: input.sellTokenAddress, data: balanceOfData }, "latest"])
       : Promise.resolve("0x0"),
   ]);
+  if (!/^0x[0-9a-f]*$/iu.test(simulation)) throw new Error("Robinhood preflight returned an invalid simulation result.");
   const nativeRequired = BigInt(input.transaction.value) + BigInt(gasLimit) * BigInt(gasPrice);
   if (BigInt(nativeBalance) < nativeRequired) {
     throw new Error(`Insufficient ETH for this swap and network fee. Required about ${formatEvmUnits(nativeRequired, 18)} ETH, available ${formatEvmUnits(BigInt(nativeBalance), 18)} ETH.`);
@@ -1560,6 +1562,7 @@ async function assertEvmBridgeFunds(input: {
     if (!proposal.sellToken || !proposal.buyToken || !proposal.sellAmount) return;
     setBridgeBusy(true);
     let submittedEvmHash: string | null = null;
+    let evmSwapStage: "quote" | "build" | "preflight" | "wallet" | "confirmation" = proposal.quoteResponse && proposal.buyAmount ? "build" : "quote";
     try {
       if (proposal.quoteResponse && proposal.buyAmount) {
         await switchToRobinhoodChain(settings.evmRpcUrl);
@@ -1583,12 +1586,19 @@ async function assertEvmBridgeFunds(input: {
         }
         setMessages((previous) => previous.map((message) => (message.id === msgId && message.proposal ? { ...message, proposal: { ...message.proposal, status: "signing" as const } } : message)));
         const buildResponse = await fetch("/api/evm/uniswap/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ walletAddress: sessionWallet, apiKey: settings.uniswapApiKey, quote: proposal.quoteResponse, routing: proposal.quoteRouting, tokenIn: proposal.sellTokenAddress, tokenOut: proposal.buyTokenAddress, amountIn: proposal.inputAmount }) });
-        const built = await buildResponse.json();
+        const buildRaw = await buildResponse.text();
+        let built: { error?: string; approvalRequired?: boolean; approval?: { from: string; to: string; data: string; value: string }; transaction?: { from: string; to: string; data: string; value: string } };
+        try {
+          built = JSON.parse(buildRaw) as typeof built;
+        } catch {
+          throw new Error(`Transaction builder returned HTTP ${buildResponse.status} with an invalid response. Request a fresh quote and try again.`);
+        }
         if (!buildResponse.ok) throw new Error(built.error || "Uniswap could not build the wallet transaction.");
         const provider = window.ethereum;
         if (!provider) throw new Error("EVM wallet extension is not available.");
         const transactionForPreflight = built.approvalRequired === true ? built.approval : built.transaction;
         if (!transactionForPreflight) throw new Error("Uniswap did not return a wallet transaction for balance verification.");
+        evmSwapStage = "preflight";
         await assertEvmSwapFunds({
           rpcUrl: settings.evmRpcUrl.trim() || DEFAULT_ROBINHOOD_RPC,
           walletAddress: sessionWallet,
@@ -1599,9 +1609,11 @@ async function assertEvmBridgeFunds(input: {
           transaction: transactionForPreflight,
         });
         const sendAndConfirm = async (transaction: { from: string; to: string; data: string; value: string }) => {
+          evmSwapStage = "wallet";
           const hash = await provider.request({ method: "eth_sendTransaction", params: [transaction] });
           if (typeof hash !== "string" || !/^0x[0-9a-f]{64}$/iu.test(hash)) throw new Error("Wallet did not return a valid transaction hash.");
           submittedEvmHash = hash;
+          evmSwapStage = "confirmation";
           for (let attempt = 0; attempt < 24; attempt += 1) {
             const receipt = await provider.request({ method: "eth_getTransactionReceipt", params: [hash] });
             if (receipt && typeof receipt === "object") {
@@ -1671,17 +1683,20 @@ async function assertEvmBridgeFunds(input: {
       else console.error("[EVM swap preparation]", error);
       const serializedError = typeof error === "string" ? error : JSON.stringify(error);
       const rawMessage = error instanceof Error ? error.message : serializedError || "Unable to prepare the EVM quote.";
+      const transactionReverted = Boolean(submittedEvmHash) && /transaction reverted/iu.test(rawMessage);
       const message = wasCancelled
         ? "Wallet approval cancelled. No transaction was signed or broadcast."
+        : evmSwapStage === "wallet" && /JSON\.parse|unexpected character|unexpected token/iu.test(rawMessage)
+        ? "Your wallet extension received a non-JSON response from its configured Robinhood Chain RPC, usually because that endpoint is unavailable or rate-limited. No transaction hash was returned. Update the Robinhood RPC URL in MetaMask/Rabby to the verified endpoint from Silfable Settings, reload, then request a fresh quote."
         : rawMessage.includes("RPC endpoint returned too many errors") || rawMessage.includes("eth_getBlockByNumber")
         ? "The Robinhood RPC in your wallet extension is failing or rate-limited. No transaction was broadcast. Open MetaMask/Rabby → Settings → Networks → Robinhood Chain, replace the RPC URL with the verified custom endpoint from Silfable Settings → Network, then reload and request a fresh quote."
         : rawMessage;
       if (submittedEvmHash) {
-        setMessages((previous) => previous.map((entry) => (entry.id === msgId && entry.proposal ? { ...entry, proposal: { ...entry.proposal, status: "unknown" as const } } : entry)));
+        setMessages((previous) => previous.map((entry) => (entry.id === msgId && entry.proposal ? { ...entry, proposal: { ...entry.proposal, status: transactionReverted ? "reverted" as const : "unknown" as const } } : entry)));
       } else {
         setMessages((previous) => previous.map((entry) => (entry.id === msgId && entry.proposal && entry.proposal.status === "signing" ? { ...entry, proposal: { ...entry.proposal, status: "ready_for_user_signature" as const } } : entry)));
       }
-      const failure: WebMessage = { id: `sys_${Date.now()}`, sessionId: activeSessionId, role: "assistant", content: submittedEvmHash ? `Swap was submitted, but confirmation is unknown. Do not submit it again until you inspect the transaction.\n\n${message}\n\n[Open transaction in Robinhood Explorer](https://robinhoodchain.blockscout.com/tx/${submittedEvmHash})` : message, createdAt: Date.now() };
+      const failure: WebMessage = { id: `sys_${Date.now()}`, sessionId: activeSessionId, role: "assistant", content: submittedEvmHash ? `${transactionReverted ? "Swap reverted on Robinhood Chain. The swap did not complete; only network gas was consumed." : "Swap was submitted, but confirmation is unknown. Do not submit it again until you inspect the transaction."}\n\n${message}\n\n[Open transaction in Robinhood Explorer](https://robinhoodchain.blockscout.com/tx/${submittedEvmHash})` : message, createdAt: Date.now() };
       setMessages((previous) => [...previous.filter((item) => item.sessionId === activeSessionId), failure]);
       await saveMessage(walletAddress, failure);
     } finally {
