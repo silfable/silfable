@@ -2030,10 +2030,6 @@ async function assertEvmBridgeFunds(input: {
                     <button onClick={() => handleSendMessage("Swap 0.001 ETH to USDG on Robinhood Chain with explicit wallet approval.")}>
                       0.001 ETH to USDG
                     </button>
-                  ) : activeSession?.workspace === "bridge" ? (
-                    <button onClick={() => handleSendMessage("Prepare a supported cross-chain bridge route for wallet review.")}>
-                      Prepare bridge route
-                    </button>
                   ) : (
                     <button onClick={() => handleSendMessage("Swap 0.001 SOL to USDC on Mainnet with restricted wallet approval.")}>
                       0.001 SOL to USDC
