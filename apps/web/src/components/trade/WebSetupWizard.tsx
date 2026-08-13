@@ -254,7 +254,7 @@ export function WebSetupWizard(props: WebSetupWizardProps) {
             </div>}
 
             {activeStep === 2 && <div className="setupStepContent">
-              <div className="notice info"><span>i</span><div><strong>Restricted Mainnet policy</strong><p>The AI can prepare a swap or bridge, but the connected wallet must show and approve the final transaction.</p></div></div>
+              
               <div className="fieldGrid">
                 <NumberField label="Max output tokens" value={settings.outputLimit} onChange={(value) => updateSettings({ outputLimit: value })} />
                 <NumberField label="Temperature" value={settings.temperature} step="0.1" onChange={(value) => updateSettings({ temperature: value })} />

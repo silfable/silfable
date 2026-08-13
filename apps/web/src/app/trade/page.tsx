@@ -2011,15 +2011,19 @@ async function assertEvmBridgeFunds(input: {
                       {showTokenLaunchPanel ? "CLOSE TOKEN LAUNCH" : "TOKEN LAUNCH"}
                     </button>
                   )}
-                  <button
-                    onClick={() =>
-                      handleSendMessage(
-                        "Swap 0.001 SOL to USDC on Mainnet with restricted wallet approval."
-                      )
-                    }
-                  >
-                    0.001 SOL to USDC
-                  </button>
+                  {activeSession?.workspace === "evm" ? (
+                    <button onClick={() => handleSendMessage("Swap 0.001 ETH to USDG on Robinhood Chain with explicit wallet approval.")}>
+                      0.001 ETH to USDG
+                    </button>
+                  ) : activeSession?.workspace === "bridge" ? (
+                    <button onClick={() => handleSendMessage("Prepare a supported cross-chain bridge route for wallet review.")}>
+                      Prepare bridge route
+                    </button>
+                  ) : (
+                    <button onClick={() => handleSendMessage("Swap 0.001 SOL to USDC on Mainnet with restricted wallet approval.")}>
+                      0.001 SOL to USDC
+                    </button>
+                  )}
                   <button
                     onClick={() => handleSendMessage("What can the web AI trading agent do safely right now?")}
                   >
@@ -2037,7 +2041,11 @@ async function assertEvmBridgeFunds(input: {
                         handleSendMessage();
                       }
                     }}
-                    placeholder="Enter your AI trading instruction... e.g. Swap 0.001 SOL to USDC"
+                    placeholder={activeSession?.workspace === "evm"
+                      ? "Enter a Robinhood Chain instruction... e.g. Swap 0.001 ETH to USDG"
+                      : activeSession?.workspace === "bridge"
+                        ? "Describe the bridge amount, destination, recipient, and fee limit..."
+                        : "Enter a Solana instruction... e.g. Swap 0.001 SOL to USDC"}
                     rows={1}
                   />
                   
