@@ -21,6 +21,17 @@ test("accepts an ERC-20 address as a Robinhood swap token", () => {
   assert.deepEqual(resolveRobinhoodSwapIntent(`swap 1 ETH to ${address}`), { requested: true, amount: "1", sellToken: "ETH", buyToken: address, needsContractAddress: false });
 });
 
+test("uses an explicit destination address supplied after its token symbol", () => {
+  const address = "0x020bfC650A365f8BB26819deAAbF3E21291018b4";
+  assert.deepEqual(resolveRobinhoodSwapIntent(`Swap $0.5 dari USDE ke CASHCAT address ${address}`), {
+    requested: true,
+    amount: "0.5",
+    sellToken: "USDE",
+    buyToken: address,
+    needsContractAddress: true,
+  });
+});
+
 test("does not create a Robinhood quote from an unrelated chat message", () => {
   assert.equal(resolveRobinhoodSwapIntent("Tolong jelaskan saldo saya").requested, false);
 });
