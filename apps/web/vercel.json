@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci --workspace @silfable/web --include-workspace-root=false",
+  "buildCommand": "npm run build --workspace @silfable/web"
+}

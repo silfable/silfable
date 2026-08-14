@@ -1,0 +1,115 @@
+name: Desktop Linux QA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/desktop/**"
+      - "apps/web/prisma/schema.prisma"
+      - "packages/contracts/**"
+      - "packages/core/**"
+      - "scripts/audit-linux-artifacts.mjs"
+      - "scripts/check-linux-glibc.sh"
+      - "scripts/smoke-electron-linux.sh"
+      - ".github/workflows/desktop-linux-qa.yml"
+      - "package-lock.json"
+      - "package.json"
+  push:
+    branches: [main]
+    paths:
+      - "apps/desktop/**"
+      - "apps/web/prisma/schema.prisma"
+      - "packages/contracts/**"
+      - "packages/core/**"
+      - "scripts/**"
+      - ".github/workflows/desktop-linux-qa.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-linux-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-and-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            glibc_max: "2.35"
+            wayland: false
+          - os: ubuntu-24.04
+            glibc_max: "2.39"
+            wayland: true
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install runtime QA dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb weston dbus-x11 binutils file
+
+      - name: Install workspace
+        run: npm ci
+
+      - name: Generate Prisma Client
+        env:
+          DATABASE_URL: mongodb://localhost:27017/silfable_ci
+        run: npm run db:generate --workspace @silfable/web
+
+      - name: Verify source
+        run: npm run typecheck && npm test
+
+      - name: Build x64 AppImage and Debian package
+        run: npm run dist:linux:x64 --workspace @silfable/desktop
+
+      - name: Audit desktop privilege boundary
+        run: npm run audit:desktop
+
+      - name: Audit packaged files
+        run: node scripts/audit-linux-artifacts.mjs apps/desktop/release
+
+      - name: Check GLIBC compatibility
+        env:
+          GLIBC_MAX: ${{ matrix.glibc_max }}
+        run: bash scripts/check-linux-glibc.sh apps/desktop/release/linux-unpacked "$GLIBC_MAX"
+
+      - name: Inspect Debian metadata
+        run: dpkg-deb --info apps/desktop/release/*.deb
+
+      - name: Smoke test X11 runtime and tray initialization
+        run: xvfb-run -a dbus-run-session -- bash scripts/smoke-electron-linux.sh x11 "$PWD/apps/desktop/release/linux-unpacked/silfable" "$RUNNER_TEMP/silfable-x11.log"
+
+      - name: Smoke test Wayland runtime and tray initialization
+        if: matrix.wayland
+        run: dbus-run-session -- bash scripts/smoke-electron-linux.sh wayland "$PWD/apps/desktop/release/linux-unpacked/silfable" "$RUNNER_TEMP/silfable-wayland.log"
+
+      - name: Generate checksums
+        working-directory: apps/desktop/release
+        run: sha256sum Silfable-*.AppImage Silfable-*.deb > SHA256SUMS.txt
+
+      - name: Collect QA logs
+        if: always()
+        run: cp "$RUNNER_TEMP"/silfable-*.log* apps/desktop/release/ 2>/dev/null || true
+
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: silfable-${{ matrix.os }}-x64-qa
+          path: |
+            apps/desktop/release/Silfable-*.AppImage
+            apps/desktop/release/Silfable-*.deb
+            apps/desktop/release/SHA256SUMS.txt
+            apps/desktop/release/silfable-*.log*
+          if-no-files-found: warn
+          retention-days: 14

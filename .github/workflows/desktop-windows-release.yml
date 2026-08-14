@@ -1,0 +1,78 @@
+name: Desktop Windows Signed Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version to build and sign
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  signed-release:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    env:
+      WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+      WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install workspace
+        run: npm ci
+
+      - name: Generate Prisma Client
+        shell: pwsh
+        env:
+          DATABASE_URL: mongodb://localhost:27017/silfable_ci
+        run: npm run db:generate --workspace @silfable/web
+
+      - name: Validate release version
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:VERSION -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Version must use stable semantic versioning.' }
+          $actual = (Get-Content ./apps/desktop/package.json | ConvertFrom-Json).version
+          if ($actual -ne $env:VERSION) { throw 'Desktop package version does not match workflow version.' }
+
+      - name: Verify source
+        run: npm run typecheck && npm test
+
+      - name: Build signed Windows installer
+        run: npm run dist:desktop:win
+
+      - name: Verify Authenticode signature
+        shell: pwsh
+        run: |
+          $installer = Get-Item ./apps/desktop/release/Silfable-*-windows-x64-setup.exe
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer.FullName
+          if ($signature.Status -ne 'Valid') { throw "Installer signature is not valid: $($signature.Status)" }
+          Write-Host "Valid publisher: $($signature.SignerCertificate.Subject)"
+
+      - name: Audit desktop privilege boundary
+        run: npm run audit:desktop
+
+      - name: Smoke signed packaged application
+        shell: pwsh
+        run: ./scripts/smoke-electron-windows.ps1 -Executable ./apps/desktop/release/win-unpacked/silfable.exe
+
+      - name: Upload signed release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: silfable-windows-${{ inputs.version }}-signed
+          path: |
+            apps/desktop/release/Silfable-*-windows-x64-setup.exe
+            apps/desktop/release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
