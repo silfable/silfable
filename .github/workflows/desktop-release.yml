@@ -1,0 +1,80 @@
+name: Desktop Linux Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build and review
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  linux-artifacts:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate Prisma Client
+        env:
+          DATABASE_URL: mongodb://localhost:27017/silfable_ci
+        run: npm run db:generate --workspace @silfable/web
+
+      - name: Validate release version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Version must use stable semantic versioning"; exit 1; }
+          node -e "const actual=require('./apps/desktop/package.json').version; if (actual !== process.env.VERSION) { throw new Error('Desktop package version does not match workflow version') }"
+
+      - name: Install Electron runtime
+        run: npm run setup:electron
+
+      - name: Verify
+        run: npm run typecheck && npm test
+
+      - name: Build AppImage and Debian packages
+        run: npm run dist:linux --workspace @silfable/desktop
+
+      - name: Audit desktop privilege boundary
+        run: npm run audit:desktop
+
+      - name: Generate checksums
+        working-directory: apps/desktop/release
+        run: sha256sum Silfable-* > SHA256SUMS.txt
+
+      - name: Upload draft artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: silfable-linux-${{ inputs.version }}
+          path: |
+            apps/desktop/release/Silfable-*
+            apps/desktop/release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Create draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: >-
+          gh release create "v${VERSION}"
+          apps/desktop/release/Silfable-*
+          apps/desktop/release/SHA256SUMS.txt
+          --draft
+          --generate-notes
+          --title "Silfable v${VERSION}"
+          --target "${GITHUB_SHA}"

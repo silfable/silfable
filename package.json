@@ -1,0 +1,43 @@
+{
+  "name": "silfable",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "homepage": "https://github.com/silfable/silfable#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/silfable/silfable.git"
+  },
+  "bugs": {
+    "url": "https://github.com/silfable/silfable/issues"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:web",
+    "dev:web": "npm run dev --workspace @silfable/web",
+    "build:web": "npm run build --workspace @silfable/web",
+    "lint:web": "npm run lint --workspace @silfable/web",
+    "dev:desktop": "npm run dev --workspace @silfable/desktop",
+    "build:desktop": "npm run build --workspace @silfable/desktop",
+    "dev:worker": "npm run dev --workspace @silfable/cloud-worker",
+    "build:worker": "npm run build --workspace @silfable/cloud-worker",
+    "audit:desktop": "node scripts/audit-desktop-bundles.mjs",
+    "audit:desktop:win": "node scripts/audit-windows-artifacts.mjs apps/desktop/release",
+    "qa:desktop:p2:win": "powershell -ExecutionPolicy Bypass -File scripts/start-windows-p2-qa.ps1",
+    "qa:desktop:p2:validate": "node scripts/validate-windows-p2-evidence.mjs",
+    "dist:desktop:win": "npm run dist:win --workspace @silfable/desktop",
+    "dist:desktop:win:qa": "npm run dist:win:qa --workspace @silfable/desktop",
+    "setup:electron": "npm exec --workspace @silfable/desktop -- install-electron",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && npm run test:p2-evidence",
+    "test:p2-evidence": "node --test scripts/p2-evidence.test.mjs",
+    "lint": "npm run lint --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=24.15.0"
+  }
+}

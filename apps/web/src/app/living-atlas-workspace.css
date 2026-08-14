@@ -1,0 +1,269 @@
+/* Silfable Living Atlas — web trading workspace skin. Behavior remains unchanged. */
+.tradeDesktopShell { background: var(--atlas-night) !important; color: var(--atlas-bone); }
+.tradeHeader {
+  height: 66px;
+  border-color: var(--atlas-line) !important;
+  background: rgb(14 11 22 / .96) !important;
+}
+.tradeHeader::after { position: absolute; left: 26%; right: 26%; bottom: -1px; height: 1px; content: ""; background: linear-gradient(90deg, transparent, var(--atlas-coral), transparent); }
+.brandLink { color: var(--atlas-bone); font-family: var(--font-display), serif; font-size: 19px; }
+.brandMark { border-color: var(--atlas-line-strong) !important; border-radius: 50% !important; background: var(--atlas-plum) !important; box-shadow: none !important; }
+.setupModeBadge { border: 1px solid rgb(167 139 250 / .42); border-radius: 999px; padding: 6px 10px; color: var(--atlas-lilac); background: rgb(167 139 250 / .08); font: 700 9px/1 var(--font-mono), monospace; letter-spacing: .16em; }
+.networkBadge { border-color: rgb(199 243 107 / .28); border-radius: 999px; color: var(--atlas-citron); background: rgb(199 243 107 / .05); }
+
+.workspace { background: var(--atlas-night) !important; }
+.leftRail, .rightRail { border-color: var(--atlas-line) !important; background: var(--atlas-plum) !important; }
+.leftRail { border-radius: 0 46px 0 0; }
+.rightRail { border-radius: 46px 0 0 0; }
+.centerStage, .conversation { background: transparent !important; }
+.workspaceHeader { border-color: var(--atlas-line) !important; background: rgb(14 11 22 / .84) !important; }
+.workspace .railBrandLogo {
+  border-color: rgb(167 139 250 / .38);
+  background: rgb(167 139 250 / .09);
+  box-shadow: none;
+}
+.workspace .sessionList > button {
+  border-color: var(--atlas-line);
+  color: var(--atlas-muted);
+  background: rgb(14 11 22 / .24);
+  box-shadow: none;
+}
+.workspace .sessionList > button:hover {
+  border-color: rgb(167 139 250 / .42);
+  color: var(--atlas-bone);
+  background: rgb(167 139 250 / .065);
+}
+.workspace .sessionList > button.active {
+  border-color: var(--atlas-coral);
+  color: var(--atlas-bone);
+  background: rgb(255 107 92 / .07);
+  box-shadow: inset 3px 0 0 var(--atlas-coral);
+}
+.workspace .avatar {
+  border-color: rgb(167 139 250 / .42);
+  background: rgb(167 139 250 / .1);
+  box-shadow: none;
+}
+
+.sessionLoadingState {
+  display: grid;
+  height: 100%;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 32px;
+  text-align: center;
+}
+.sessionLoadingState p { margin: 8px 0 0; color: var(--atlas-bone); font: 500 24px/1.1 var(--font-display), serif; }
+.sessionLoadingState small { color: var(--atlas-muted); font: 700 9px/1.5 var(--font-mono), monospace; letter-spacing: .13em; text-transform: uppercase; }
+.sessionLoadingRoute { display: flex; width: min(280px, 62vw); align-items: center; }
+.sessionLoadingRoute span { flex: 0 0 12px; width: 12px; height: 12px; border: 2px solid var(--atlas-night); border-radius: 50%; background: var(--atlas-lilac); box-shadow: 0 0 0 1px var(--atlas-lilac); animation: atlasSessionNode 1.35s ease-in-out infinite; }
+.sessionLoadingRoute span:nth-of-type(2) { background: var(--atlas-coral); box-shadow: 0 0 0 1px var(--atlas-coral); animation-delay: .18s; }
+.sessionLoadingRoute span:nth-of-type(3) { background: var(--atlas-aqua); box-shadow: 0 0 0 1px var(--atlas-aqua); animation-delay: .36s; }
+.sessionLoadingRoute i { height: 1px; flex: 1; overflow: hidden; background: var(--atlas-line-strong); }
+.sessionLoadingRoute i::after { display: block; width: 45%; height: 100%; content: ""; background: linear-gradient(90deg, transparent, var(--atlas-coral), transparent); animation: atlasSessionRoute 1.35s ease-in-out infinite; }
+@keyframes atlasSessionNode { 0%, 100% { transform: scale(.75); opacity: .5; } 50% { transform: scale(1); opacity: 1; } }
+@keyframes atlasSessionRoute { from { transform: translateX(-120%); } to { transform: translateX(260%); } }
+
+.newSession, .workspace .primaryButton, .workspace .composer button:not(:disabled), .createBtn {
+  border: 1px solid var(--atlas-coral) !important;
+  border-radius: 999px !important;
+  color: var(--atlas-night) !important;
+  background: var(--atlas-coral) !important;
+  box-shadow: none !important;
+}
+.newSession:hover, .workspace .primaryButton:hover:not(:disabled), .workspace .composer button:not(:disabled):hover { background: #ff8376 !important; }
+
+.sessionItem, .missionPreview, .railSection, .messageCard, .proposalCard, .setupCard, .integrationCard, .walletRegistry, .reviewRow {
+  border-color: var(--atlas-line) !important;
+  background: rgb(14 11 22 / .36) !important;
+  box-shadow: none !important;
+}
+.sessionItem { border-radius: 12px 28px 12px 12px !important; }
+.sessionItem.active, .missionPreview, .proposalCard.confirmed {
+  border-color: rgb(255 107 92 / .55) !important;
+  background: rgb(255 107 92 / .055) !important;
+  box-shadow: inset 3px 0 0 var(--atlas-coral) !important;
+}
+.messageCard { border-radius: 28px 12px 28px 12px !important; }
+.proposalCard { position: relative; border-radius: 18px 56px 18px 18px !important; overflow: hidden; }
+.proposalCard::before { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; content: ""; background: var(--atlas-lilac); }
+
+.swapRouteCard { position: relative; display: block; width: 100%; min-width: 0; overflow: hidden; border: 1px solid var(--atlas-line); border-radius: 18px 54px 18px 18px; padding: 18px; color: var(--atlas-bone); background: var(--atlas-plum); }
+.swapRouteCard::before { position: absolute; top: 0; left: 22px; width: 64px; height: 2px; content: ""; background: var(--swap-route-color); }
+.swapRouteCard--robinhood { --swap-route-color: var(--atlas-lilac); }
+.swapRouteCard--solana { --swap-route-color: var(--atlas-aqua); }
+.swapRouteHeader { display: flex; width: 100%; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--atlas-line); }
+.swapRouteHeader > div { min-width: 0; }
+.swapRouteEyebrow { display: block; margin-bottom: 7px; color: var(--swap-route-color); font: 700 9px/1.3 var(--font-mono), monospace; letter-spacing: .15em; text-transform: uppercase; }
+.swapRouteHeader strong { display: flex; align-items: center; gap: 8px; color: var(--atlas-bone); font: 500 21px/1.2 var(--font-display), serif; }
+.swapRouteHeader strong svg { width: 14px; color: var(--swap-route-color); }
+.swapRouteStatus { flex: 0 0 auto; border: 1px solid var(--atlas-line-strong); border-radius: 999px; padding: 6px 9px; color: var(--atlas-muted); font: 700 8px/1 var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; }
+.swapRouteStatus--ready { border-color: color-mix(in srgb, var(--swap-route-color) 50%, transparent); color: var(--swap-route-color); }
+.swapRouteStatus--confirmed { border-color: rgb(199 243 107 / .42); color: var(--atlas-citron); }
+.swapRouteStatus--pending { border-color: rgb(255 107 92 / .42); color: var(--atlas-coral); }
+.swapRouteStatus--warning { border-color: rgb(255 196 107 / .42); color: #ffc46b; }
+.swapRouteLedger { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 14px 0; overflow: hidden; border: 1px solid var(--atlas-line); border-radius: 10px 28px 10px 10px; background: var(--atlas-line); }
+.swapRouteLedger > div { min-width: 0; padding: 11px 12px; background: var(--atlas-night); }
+.swapRouteLedger dt { margin-bottom: 5px; color: var(--atlas-muted); font: 700 8px/1.2 var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; }
+.swapRouteLedger dd { overflow-wrap: anywhere; color: var(--atlas-bone); font: 600 11px/1.45 var(--font-mono), monospace; }
+.swapRouteChecks { display: grid; gap: 7px; margin-bottom: 14px; }
+.swapRouteChecks > div { display: flex; align-items: flex-start; gap: 8px; color: var(--atlas-muted); font-size: 11px; line-height: 1.55; }
+.swapRouteChecks svg { flex: 0 0 13px; width: 13px; margin-top: 2px; color: var(--atlas-aqua); }
+.swapRouteFooter { display: flex; width: 100%; min-width: 0; align-items: center; justify-content: space-between; gap: 18px; padding-top: 14px; border-top: 1px solid var(--atlas-line); }
+.swapRouteFooter > div { min-width: 0; }
+.swapRouteFooter span { display: flex; align-items: center; gap: 6px; color: var(--atlas-bone); font-size: 11px; font-weight: 600; }
+.swapRouteFooter span svg { width: 14px; color: var(--swap-route-color); }
+.swapRouteFooter small { display: block; max-width: 36rem; margin-top: 4px; color: var(--atlas-muted); font-size: 10px; line-height: 1.5; text-transform: none; letter-spacing: normal; }
+.swapRouteFooter .primaryButton { display: inline-flex; flex: 0 0 auto; min-width: 144px; align-items: center; justify-content: center; gap: 7px; padding: 10px 15px; font-size: 10px; }
+.swapRouteFooter .primaryButton svg { width: 13px; }
+
+.homeState .brandMark { width: 76px !important; height: 76px !important; border-color: rgb(167 139 250 / .48) !important; }
+.homeState h1 { max-width: 850px; color: var(--atlas-bone); font-family: var(--font-display), serif; font-size: clamp(3.3rem, 5vw, 6.4rem); font-weight: 430; line-height: .88; letter-spacing: -.05em; }
+.homeState .kicker { color: var(--atlas-aqua); }
+.composer { border-color: var(--atlas-line-strong) !important; border-radius: 32px 14px 32px 14px !important; background: var(--atlas-plum) !important; box-shadow: none !important; }
+.composer:focus-within { border-color: var(--atlas-coral) !important; box-shadow: 0 0 0 3px rgb(255 107 92 / .09) !important; }
+
+.railSection { border-radius: 14px 38px 14px 14px !important; }
+.rightRail :is(.portfolioValue, .balanceValue) { color: var(--atlas-citron) !important; font-family: var(--font-display), serif; }
+.workspace [class*="text-cyan"], .workspace [class*="text-blue"] { color: var(--atlas-aqua) !important; }
+.workspace [class*="text-emerald"], .workspace [class*="text-green"] { color: var(--atlas-citron) !important; }
+.workspace [class*="border-cyan"], .workspace [class*="border-blue"] { border-color: rgb(103 232 212 / .32) !important; }
+.workspace [class*="border-emerald"] { border-color: rgb(199 243 107 / .3) !important; }
+.workspace [class*="bg-gradient"], .workspace [class*="bg-blue"], .workspace [class*="bg-cyan"] { background-image: none !important; background-color: rgb(103 232 212 / .08) !important; }
+
+.modeSwitcher { border-color: var(--atlas-line); background: var(--atlas-plum); }
+.modeButton.active { border-color: rgb(167 139 250 / .42); color: var(--atlas-bone); background: rgb(167 139 250 / .15); }
+.iconBtn, .choiceGrid button, .sessionConfigSection input, .field input, .field textarea, .field select {
+  border-color: var(--atlas-line) !important;
+  color: var(--atlas-bone) !important;
+  background: var(--atlas-night) !important;
+}
+.choiceGrid button { border-radius: 12px 32px 12px 12px; }
+.choiceGrid button.active { border-color: var(--atlas-coral) !important; background: rgb(255 107 92 / .08) !important; }
+.choiceGrid button.active::before { background: var(--atlas-coral); }
+.choiceGrid button.pumpChoice.active { border-color: var(--atlas-lilac) !important; background: rgb(167 139 250 / .1) !important; }
+
+.sessionModal, .deleteSessionDialog {
+  border-color: var(--atlas-line-strong) !important;
+  border-radius: 24px 74px 24px 24px !important;
+  color: var(--atlas-bone) !important;
+  background: var(--atlas-plum) !important;
+  box-shadow: 0 32px 100px rgb(0 0 0 / .48) !important;
+}
+.sessionModalHeader, .sessionModalFooter, .deleteSessionDialog > header { border-color: var(--atlas-line) !important; background: transparent !important; }
+.sessionModalHeader h2, .deleteSessionDialog h2 { color: var(--atlas-bone); font-family: var(--font-display), serif; font-size: 32px; }
+.modalClose { border-color: var(--atlas-line); color: var(--atlas-muted); }
+.modalClose:hover { border-color: var(--atlas-coral); color: var(--atlas-coral); }
+
+.setupScreenLayout { padding-top: 88px; background: var(--atlas-night) !important; }
+.setupScreenLayout .tradeHeader { width: min(1180px, calc(100% - 40px)); }
+.setupScreenLayout .networkBadge { border-color: rgb(167 139 250 / .35); color: var(--atlas-lilac); background: rgb(167 139 250 / .07); }
+.setupScreenLayout .statusDot { background: var(--atlas-lilac); box-shadow: none; }
+.setupContainer { width: min(1180px, 100%); padding-block: 32px 60px; }
+
+.setupProgress { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 26px; }
+.setupProgress::before { position: absolute; z-index: 0; top: 21px; left: 12.5%; right: 12.5%; height: 1px; content: ""; background: linear-gradient(90deg, var(--atlas-lilac), var(--atlas-coral), var(--atlas-line-strong)); }
+.setupProgressItem { z-index: 1; min-width: 0; align-items: center; gap: 10px; border: 0; padding: 0 8px; color: var(--atlas-muted); text-align: center; }
+.setupRouteNode { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--atlas-line-strong); border-radius: 50%; color: var(--atlas-muted); background: var(--atlas-night); font: 700 9px/1 var(--font-mono), monospace; }
+.setupRouteLabel { color: inherit; font: 700 9px/1.35 var(--font-mono), monospace; letter-spacing: .13em; text-transform: uppercase; }
+.setupProgressItem.active { color: var(--atlas-bone); }
+.setupProgressItem.active .setupRouteNode { border-color: var(--atlas-coral); color: var(--atlas-night); background: var(--atlas-coral); box-shadow: 0 0 0 5px rgb(255 107 92 / .08); }
+.setupProgressItem.complete { color: var(--atlas-lilac); }
+.setupProgressItem.complete .setupRouteNode { border-color: var(--atlas-lilac); color: var(--atlas-lilac); background: var(--atlas-night); }
+
+.setupRouteCanvas { display: grid; grid-template-columns: minmax(280px, .38fr) minmax(0, .62fr); overflow: clip; border-radius: 22px 76px 22px 22px !important; background: var(--atlas-plum) !important; }
+.setupRouteCanvas > .setupChapterHeader { position: relative; min-height: 560px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 28px; border-right: 1px solid var(--atlas-line); border-bottom: 0; padding: 42px 38px; background: rgb(167 139 250 / .045); }
+.setupRouteCanvas > .setupChapterHeader::after { position: absolute; right: -130px; bottom: -130px; width: 300px; height: 300px; border: 1px solid rgb(167 139 250 / .16); border-radius: 50%; content: ""; box-shadow: 0 0 0 54px rgb(167 139 250 / .025), 0 0 0 108px rgb(103 232 212 / .015); }
+.setupIcon { width: 54px; height: 54px; border-color: var(--atlas-coral); border-radius: 50%; color: var(--atlas-coral); background: transparent; font: 600 12px/1 var(--font-mono), monospace; }
+.setupChapterCopy { position: relative; z-index: 1; margin-top: 12px; margin-bottom: auto; }
+.setupChapterKicker, .integrationEyebrow { display: block; color: var(--atlas-lilac); font: 700 9px/1.4 var(--font-mono), monospace; letter-spacing: .16em; text-transform: uppercase; }
+.setupRouteCanvas h1 { max-width: 100%; margin: 18px 0 0; overflow-wrap: anywhere; color: var(--atlas-bone); font: 430 clamp(2.7rem, 3.4vw, 4.2rem)/.92 var(--font-display), serif; letter-spacing: -.05em; }
+.setupRouteCanvas .setupChapterHeader p { max-width: 28rem; margin-top: 22px; color: var(--atlas-muted); font-size: 13px; line-height: 1.75; }
+.setupRouteCanvas > .setupBody { min-width: 0; padding: 34px; background: rgb(14 11 22 / .34); }
+.setupStepContent { gap: 14px; }
+.setupNetworkAtlas { display: grid; grid-template-columns: 1fr; align-items: stretch; }
+.setupNetworkAtlas > .integrationCard:nth-child(2) { order: 1; }
+.setupNetworkAtlas > .integrationCard:nth-child(4) { order: 2; }
+.setupNetworkAtlas > .integrationCard:nth-child(1) { order: 3; }
+.setupNetworkAtlas > .integrationCard:nth-child(3) { order: 4; }
+.integrationCard { position: relative; min-width: 0; border-radius: 14px 42px 14px 14px !important; padding: 22px; background: var(--atlas-night) !important; }
+.integrationCard::before { position: absolute; top: 0; left: 22px; width: 52px; height: 2px; content: ""; background: var(--atlas-lilac); }
+.integrationCard.setupTone-coral::before { background: var(--atlas-coral); }
+.integrationCard.setupTone-aqua::before { background: var(--atlas-aqua); }
+.integrationCardHeader > div { min-width: 0; }
+.integrationEyebrow { margin-bottom: 9px; }
+.setupTone-coral .integrationEyebrow { color: var(--atlas-coral); }
+.setupTone-aqua .integrationEyebrow { color: var(--atlas-aqua); }
+.integrationCard h2 { color: var(--atlas-bone); font-family: var(--font-display), serif; font-size: 24px; font-weight: 500; }
+.integrationCard p { color: var(--atlas-muted); line-height: 1.65; }
+.setupStatus { border-color: var(--atlas-line-strong); border-radius: 999px; color: var(--atlas-muted); background: transparent; }
+.setupStatus.ok { border-color: rgb(103 232 212 / .42); color: var(--atlas-aqua); background: rgb(103 232 212 / .06); }
+.setupStatus.warn { border-color: rgb(255 196 107 / .42); color: #ffc46b; }
+.reviewDot.ok { background: var(--atlas-aqua); }
+.reviewDot.warn { background: #ffc46b; }
+.setupResult { margin-top: 7px; font-size: 11px; font-weight: 600; line-height: 1.55; }
+.setupResult.ok { color: var(--atlas-aqua); }
+.setupResult.error { color: var(--atlas-coral); }
+.editingBar button, .reviewEdit { color: var(--atlas-lilac); }
+.inlineInputAction { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.inlineInputAction input { min-width: 0; padding-right: 12px; }
+.inlineInputAction .setupVerifyButton { position: static; min-width: 104px; border: 1px solid rgb(167 139 250 / .48); border-radius: 999px; padding: 0 18px; color: var(--atlas-lilac); background: rgb(167 139 250 / .08); transform: none; }
+.inlineInputAction .setupVerifyButton:hover:not(:disabled) { border-color: var(--atlas-lilac); color: var(--atlas-night); background: var(--atlas-lilac); }
+.inlineInputAction .setupVerifyButton:disabled { cursor: wait; opacity: .55; }
+.reviewEdit { color: var(--atlas-lilac); }
+.reviewEdit:hover { color: #ff8376; }
+.setupScreenLayout .field input:focus, .setupScreenLayout .field select:focus { border-color: var(--atlas-coral) !important; box-shadow: 0 0 0 3px rgb(255 107 92 / .08); }
+.setupActionsRow { position: flex; z-index: 4; bottom: 12px; margin: 8px -10px -10px; border: 1px solid var(--atlas-line); border-radius: 999px; padding: 10px; background: rgb(14 11 22 / .94); backdrop-filter: blur(12px); }
+.setupActionsRow .primaryButton { border-color: var(--atlas-coral) !important; color: var(--atlas-night) !important; background: var(--atlas-coral) !important; }
+.setupActionsRow .railBtn { border-color: var(--atlas-line-strong); border-radius: 999px; color: var(--atlas-bone); }
+.setupTab.active { border-color: rgb(167 139 250 / .45); background: rgb(167 139 250 / .1); }
+.setupFeedback { border-color: rgb(103 232 212 / .35); background: rgb(103 232 212 / .07); }
+
+.wallet-adapter-modal-overlay { background: rgb(14 11 22 / .84) !important; }
+.wallet-adapter-modal-wrapper { border-color: var(--atlas-line-strong) !important; border-radius: 24px 74px 24px 24px !important; background: var(--atlas-plum) !important; box-shadow: 0 32px 90px rgb(0 0 0 / .55) !important; font-family: var(--font-sans), sans-serif !important; }
+.wallet-adapter-modal-title { color: var(--atlas-bone) !important; font-family: var(--font-display), serif !important; font-size: 28px !important; }
+.wallet-adapter-modal-list .wallet-adapter-button { border-color: var(--atlas-line) !important; border-radius: 12px 32px 12px 12px !important; color: var(--atlas-bone) !important; background: var(--atlas-night) !important; }
+.wallet-adapter-modal-list .wallet-adapter-button:hover { border-color: var(--atlas-coral) !important; background: rgb(255 107 92 / .07) !important; }
+.walletBtnOverride { border-radius: 999px !important; color: var(--atlas-night) !important; background: var(--atlas-coral) !important; }
+
+.gateScreenLayout { background: var(--atlas-night) !important; }
+.authLoadingGate { border-color: var(--atlas-line); border-radius: 32px 100px 32px 32px; background: var(--atlas-plum); box-shadow: none; }
+.authLoaderOrbit { border-color: rgb(167 139 250 / .28); }
+.authLoaderOrbit::before { border-top-color: var(--atlas-coral); border-right-color: var(--atlas-aqua); }
+.authLoaderOrbit span { background: var(--atlas-coral); box-shadow: none; }
+.authLoadingProgress span { background: linear-gradient(90deg, var(--atlas-coral), var(--atlas-citron)); }
+
+@media (max-width: 960px) {
+  .leftRail, .rightRail { border-radius: 0; }
+  .setupRouteCanvas { grid-template-columns: 1fr; }
+  .setupRouteCanvas > .setupChapterHeader { min-height: 280px; border-right: 0; border-bottom: 1px solid var(--atlas-line); }
+  .setupChapterCopy { margin: 0; }
+  .setupRouteCanvas h1 { max-width: 12em; }
+  .setupNetworkAtlas { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .swapRouteHeader, .swapRouteFooter { align-items: stretch; flex-direction: column; }
+  .swapRouteLedger { grid-template-columns: 1fr; }
+  .swapRouteFooter .primaryButton { width: 100%; }
+  .setupScreenLayout { padding: 76px 12px 28px; }
+  .setupScreenLayout .tradeHeader { width: calc(100% - 24px); }
+  .setupProgress { grid-template-columns: 1fr; gap: 10px; }
+  .setupProgress::before { top: 20px; bottom: 20px; left: 20px; right: auto; width: 1px; height: auto; background: linear-gradient(var(--atlas-lilac), var(--atlas-coral), var(--atlas-line-strong)); }
+  .setupProgressItem { flex-direction: row; justify-content: flex-start; padding: 0; text-align: left; }
+  .setupRouteNode { flex: 0 0 40px; width: 40px; height: 40px; }
+  .setupRouteCanvas { border-radius: 18px 48px 18px 18px !important; }
+  .setupRouteCanvas > .setupChapterHeader { min-height: 240px; padding: 30px 24px; }
+  .setupRouteCanvas > .setupBody { padding: 22px 16px; }
+  .setupRouteCanvas h1 { font-size: clamp(2.6rem, 13vw, 3.7rem); }
+  .integrationCard { padding: 19px 16px; }
+  .inlineInputAction input { padding-right: 12px; }
+  .inlineInputAction button { position: static; width: 100%; margin-top: 8px; border: 1px solid var(--atlas-coral); border-radius: 999px; padding: 11px; transform: none; }
+  .setupActionsRow { position: static; flex-direction: column-reverse; border-radius: 18px; }
+  .setupActionsRow button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .authLoaderOrbit, .authLoadingProgress span { animation: none !important; }
+}
